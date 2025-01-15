@@ -1,0 +1,280 @@
+import tkinter as tk
+import random
+
+class Game2048:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("2048 Game - 10x10 Grid")
+
+        self.size = 10  # Grid size
+        self.score = 0
+
+        # Original 2048 background color palette
+        self.bg_colors = {
+            0: "#cdc1b4",   # Empty
+            2: "#eee4da",   # 2
+            4: "#ede0c8",   # 4
+            8: "#f2b179",   # 8
+            16: "#f59563",  # 16
+            32: "#f67c5f",  # 32
+            64: "#f65e3b",  # 64
+            128: "#edcf72", # 128
+            256: "#edcc61", # 256
+            512: "#edc850", # 512
+            1024: "#edc53f",# 1024
+            2048: "#edc22e",# 2048
+        }
+
+        # Blue color palette for the tiles
+        self.tile_colors = {
+            0: "#d0e7f9",    # Empty
+            2: "#a2d5f2",    # 2
+            4: "#79c2f2",    # 4
+            8: "#5aa9f9",    # 8
+            16: "#3587f2",   # 16
+            32: "#1766f2",   # 32
+            64: "#1343ba",   # 64
+            128: "#0d3087",  # 128
+            256: "#0a2066",  # 256
+            512: "#081547",  # 512
+            1024: "#050d33", # 1024
+            2048: "#03071e", # 2048
+        }
+
+        # Create grid
+        self.grid = [[0] * self.size for _ in range(self.size)]
+        self.tiles = []
+        self.init_ui()
+
+        # Add two initial tiles
+        self.add_tile()
+        self.add_tile()
+
+        self.update_ui()
+
+        # Bind the arrow keys to movements
+        self.root.bind("<Up>", lambda event: self.move_up())
+        self.root.bind("<Left>", lambda event: self.move_left())
+        self.root.bind("<Down>", lambda event: self.move_down())
+        self.root.bind("<Right>", lambda event: self.move_right())
+
+        # To stop auto play once started
+        self.auto_play_running = False
+
+    def init_ui(self):
+        """Initialize the user interface."""
+        self.canvas = tk.Canvas(self.root, bg="blue", width=600, height=600)
+        self.canvas.pack(padx=10, pady=10)
+
+        # Score label with Xolonium font
+        self.score_label = tk.Label(
+            self.root, text=f"Score: {self.score}", font=("Xolonium", 16), bg="#5aa9f9"
+        )
+        self.score_label.pack(pady=10)
+
+        # Auto button with Xolonium font
+        self.auto_button = tk.Button(
+            self.root,
+            text="Auto",
+            bg="blue",
+            fg="white",
+            command=self.toggle_auto_play,
+            font=("Xolonium", 12)
+        )
+        self.auto_button.pack(pady=10)
+
+        # Game Over label (initially hidden)
+        self.game_over_label = tk.Label(
+            self.root, text="Game Over", font=("Xolonium", 24, "bold"), fg="red", bg="blue"
+        )
+        self.game_over_label.pack_forget()
+
+        # Restart button (initially hidden)
+        self.restart_button = tk.Button(
+            self.root,
+            text="Restart Game",
+            bg="blue",
+            fg="white",
+            command=self.restart_game,
+            font=("Xolonium", 12)
+        )
+        self.restart_button.pack_forget()
+
+    def add_tile(self):
+        """Add a new tile with value 2 or 4 to an empty spot on the grid."""
+        empty_tiles = [(i, j) for i in range(self.size) for j in range(self.size) if self.grid[i][j] == 0]
+        if not empty_tiles:
+            return
+        i, j = random.choice(empty_tiles)
+        self.grid[i][j] = random.choice([2, 4])
+
+    def update_ui(self):
+        """Update the UI to reflect the grid state."""
+        self.canvas.delete("all")
+        
+        tile_size = 50
+        spacing = 5
+        radius = 10  # For rounded corners
+
+        for i in range(self.size):
+            for j in range(self.size):
+                value = self.grid[i][j]
+                x1 = j * (tile_size + spacing) + 10
+                y1 = i * (tile_size + spacing) + 10
+                x2 = x1 + tile_size
+                y2 = y1 + tile_size
+
+                # Create rounded corners using ovals (behind the tiles)
+                corner_color = "#A6D1FF"  # Color for the corner circles (light blue)
+
+                self.canvas.create_oval(
+                    x1, y1, x1 + radius * 2, y1 + radius * 2,
+                    fill=corner_color, outline="black", width=2
+                )
+                self.canvas.create_oval(
+                    x2 - radius * 2, y1, x2, y1 + radius * 2,
+                    fill=corner_color, outline="black", width=2
+                )
+                self.canvas.create_oval(
+                    x1, y2 - radius * 2, x1 + radius * 2, y2,
+                    fill=corner_color, outline="black", width=2
+                )
+                self.canvas.create_oval(
+                    x2 - radius * 2, y2 - radius * 2, x2, y2,
+                    fill=corner_color, outline="black", width=2
+                )
+
+                # Background color
+                color = self.tile_colors.get(value, "#03071e")
+
+                # Draw the main tile rectangle (on top of the circles)
+                self.canvas.create_rectangle(
+                    x1 + radius, y1, x2 - radius, y2, 
+                    fill=color, outline="black", width=2
+                )
+                self.canvas.create_rectangle(
+                    x1, y1 + radius, x2, y2 - radius,
+                    fill=color, outline="black", width=2
+                )
+
+                # Set text color based on value
+                if value > 256:
+                    text_color = "white"
+                else:
+                    text_color = "black"
+
+                if value != 0:
+                    self.canvas.create_text(
+                        x1 + tile_size / 2, y1 + tile_size / 2,
+                        text=str(value), font=("Xolonium", 14), fill=text_color
+                    )
+
+        self.score_label.config(text=f"Score: {self.score}")
+
+    def compress(self):
+        """Compress tiles in the grid to the left."""
+        new_grid = [[0] * self.size for _ in range(self.size)]
+        for i in range(self.size):
+            pos = 0
+            for j in range(self.size):
+                if self.grid[i][j] != 0:
+                    new_grid[i][pos] = self.grid[i][j]
+                    pos += 1
+        self.grid = new_grid
+
+    def merge(self):
+        """Merge tiles in the grid to the left."""
+        for i in range(self.size):
+            for j in range(self.size - 1):
+                if self.grid[i][j] == self.grid[i][j + 1] and self.grid[i][j] != 0:
+                    self.grid[i][j] *= 2
+                    self.grid[i][j + 1] = 0
+                    self.score += self.grid[i][j]
+
+    def reverse(self):
+        """Reverse the grid rows."""
+        for i in range(self.size):
+            self.grid[i] = self.grid[i][::-1]
+
+    def transpose(self):
+        """Transpose the grid."""
+        self.grid = [list(row) for row in zip(*self.grid)]
+
+    def move_left(self):
+        self.compress()
+        self.merge()
+        self.compress()
+        self.add_tile()
+        self.update_ui()
+
+    def move_right(self):
+        self.reverse()
+        self.compress()
+        self.merge()
+        self.compress()
+        self.reverse()
+        self.add_tile()
+        self.update_ui()
+
+    def move_up(self):
+        self.transpose()      # Transpose the grid (rows become columns)
+        self.move_left()      # Move left (which is effectively up in the original grid)
+        self.transpose()      # Transpose back to the original grid orientation
+        self.add_tile()       # Add a new tile after the move
+        self.update_ui()      # Update the UI to reflect the new grid
+
+    def move_down(self):
+        self.transpose()      # Transpose the grid (rows become columns)
+        self.reverse()        # Reverse the rows (so we can move down like left)
+        self.move_left()      # Move left (which is now effectively down in the original grid)
+        self.reverse()        # Reverse the rows back
+        self.transpose()      # Transpose back to the original grid orientation
+        self.add_tile()       # Add a new tile after the move
+        self.update_ui()      # Update the UI to reflect the new grid
+
+    def check_game_over(self):
+        """Check if there are no possible moves left."""
+        for i in range(self.size):
+            for j in range(self.size - 1):
+                if self.grid[i][j] == self.grid[i][j + 1] or self.grid[i][j] == 0:
+                    return False
+        for j in range(self.size):
+            for i in range(self.size - 1):
+                if self.grid[i][j] == self.grid[i + 1][j] or self.grid[i][j] == 0:
+                    return False
+        return True
+
+    def toggle_auto_play(self):
+        """Toggle auto play on and off."""
+        if self.auto_play_running:
+            self.auto_play_running = False
+            self.auto_button.config(text="Auto")
+        else:
+            self.auto_play_running = True
+            self.auto_button.config(text="Stop Auto")
+            self.auto_play()
+
+    def auto_play(self):
+        """Make random moves continuously at intervals."""
+        if self.auto_play_running:
+            moves = [self.move_up, self.move_down, self.move_left, self.move_right]
+            random.choice(moves)()
+            self.root.after(200, self.auto_play)  # 200 ms interval for continuous movement
+            if self.check_game_over():
+                self.game_over_label.pack()
+                self.restart_button.pack()  # Show the restart button
+
+    def restart_game(self):
+        """Restart the game."""
+        self.grid = [[0] * self.size for _ in range(self.size)]
+        self.score = 0
+        self.add_tile()
+        self.add_tile()
+        self.update_ui()
+        self.game_over_label.pack_forget()  # Hide the game over label
+        self.restart_button.pack_forget()  # Hide the restart button
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    game = Game2048(root)
+    root.mainloop()
